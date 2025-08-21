@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Kaia DeFi Design System - Modern Web3 aesthetic with Kaia branding
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Kaia Brand Colors */
+    --kaia-green: 84 100% 50%;
+    --kaia-green-bright: 84 100% 60%;
+    --kaia-green-dim: 84 80% 40%;
+    
+    /* Dark theme base */
+    --background: 240 6% 6%;
+    --foreground: 84 30% 95%;
+
+    --card: 240 6% 8%;
+    --card-foreground: 84 20% 92%;
+
+    --popover: 240 6% 10%;
+    --popover-foreground: 84 20% 92%;
+
+    --primary: 84 100% 50%;
+    --primary-foreground: 240 6% 6%;
+
+    --secondary: 240 6% 12%;
+    --secondary-foreground: 84 30% 90%;
+
+    --muted: 240 6% 12%;
+    --muted-foreground: 84 10% 65%;
+
+    --accent: 240 6% 14%;
+    --accent-foreground: 84 30% 90%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 6% 16%;
+    --input: 240 6% 12%;
+    --ring: 84 100% 50%;
+
+    --radius: 0.75rem;
+    
+    /* Gradients */
+    --gradient-kaia: linear-gradient(135deg, hsl(var(--kaia-green)), hsl(var(--kaia-green-bright)));
+    --gradient-card: linear-gradient(135deg, hsl(240 6% 8%), hsl(240 6% 10%));
+    --gradient-hero: linear-gradient(135deg, hsl(240 6% 4%), hsl(240 6% 8%));
+    --gradient-glow: radial-gradient(circle at center, hsl(var(--kaia-green) / 0.3), transparent 70%);
+    
+    /* Shadows */
+    --shadow-kaia: 0 4px 20px hsl(var(--kaia-green) / 0.3);
+    --shadow-card: 0 4px 12px hsl(240 6% 2% / 0.8);
+    --shadow-glow: 0 0 40px hsl(var(--kaia-green) / 0.4);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Light theme disabled - Kaia DeFi uses dark theme only */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(240 6% 4%), hsl(240 6% 8%));
+    min-height: 100vh;
+  }
+  
+  .kaia-glow {
+    box-shadow: var(--shadow-kaia);
+  }
+  
+  .card-glow {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .gradient-kaia {
+    background: var(--gradient-kaia);
+  }
+  
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 20px hsl(var(--kaia-green) / 0.3); }
+  100% { box-shadow: 0 0 40px hsl(var(--kaia-green) / 0.6); }
+}

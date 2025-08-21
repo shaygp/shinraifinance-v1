@@ -1,0 +1,15 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.19"
+optimizer = true
+optimizer_runs = 200
+
+[rpc_endpoints]
+kaia = "https://public-en.node.kaia.io"
+kairos = "https://public-en-kairos.node.kaia.io"
+
+[etherscan]
+kaia = { key = "${KAIASCAN_API_KEY}" }
+kairos = { key = "${KAIASCAN_API_KEY}" }

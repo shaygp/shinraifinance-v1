@@ -117,16 +117,39 @@ const Swap = () => {
 
     setIsSwapping(true);
     try {
+      console.log('Starting swap from frontend...');
       const result = await executeSwap();
+      
+      console.log('Swap completed:', result);
       toast({
         title: "Swap successful!",
-        description: `Successfully swapped ${fromAmount} ${fromToken} for ${toAmount} ${toToken}`,
+        description: `Successfully swapped ${fromAmount} ${fromToken} for ${toAmount} ${toToken}. TX: ${result.txHash}`,
       });
+      
+      // Refresh token balances after successful swap
+      setTimeout(() => {
+        window.location.reload(); // Simple way to refresh balances
+      }, 2000);
+      
     } catch (error) {
       console.error('Swap error:', error);
+      let errorMessage = "Transaction failed. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          errorMessage = "Transaction cancelled by user.";
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = "Insufficient funds for transaction (including gas fees).";
+        } else if (error.message.includes('Insufficient output amount')) {
+          errorMessage = "Slippage too high. Try increasing slippage tolerance.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Swap failed",
-        description: error instanceof Error ? error.message : "Transaction failed. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -208,8 +208,20 @@ export const useSwap = (walletState: {
       throw new Error('Wallet not connected');
     }
 
+    if (!provider || !signer) {
+      throw new Error('Wallet provider not available');
+    }
+
+    if (chainId !== 1001) {
+      throw new Error('Please switch to Kairos testnet (Chain ID: 1001)');
+    }
+
     if (!swapState.fromAmount || !swapState.toAmount) {
       throw new Error('Invalid swap amounts');
+    }
+
+    if (parseFloat(swapState.fromAmount) <= 0) {
+      throw new Error('Swap amount must be greater than 0');
     }
 
     setSwapState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -232,23 +244,42 @@ export const useSwap = (walletState: {
       // Get DEX contract address for approval
       const dexAddress = getProtocolAddress('swap', chainId);
       
-      // Approve tokens for DEX contract
-      switch (swapState.fromToken) {
-        case 'KAIA':
-          await contractService.approveKAIA(dexAddress, swapState.fromAmount, chainId);
-          break;
-        case 'KUSD':
-          await contractService.approveKUSD(dexAddress, swapState.fromAmount, chainId);
-          break;
-        case 'WKAIA':
-          await contractService.approveWKAIA(dexAddress, swapState.fromAmount, chainId);
-          break;
+      // Approve tokens for DEX contract (with proper error handling)
+      console.log(`Approving ${swapState.fromAmount} ${swapState.fromToken} for DEX contract...`);
+      try {
+        switch (swapState.fromToken) {
+          case 'KAIA':
+            const kaiaApproval = await contractService.approveKAIA(dexAddress, swapState.fromAmount, chainId);
+            console.log('KAIA approval result:', kaiaApproval);
+            break;
+          case 'KUSD':
+            const kusdApproval = await contractService.approveKUSD(dexAddress, swapState.fromAmount, chainId);
+            console.log('KUSD approval result:', kusdApproval);
+            break;
+          case 'WKAIA':
+            const wkaiaApproval = await contractService.approveWKAIA(dexAddress, swapState.fromAmount, chainId);
+            console.log('WKAIA approval result:', wkaiaApproval);
+            break;
+        }
+      } catch (approvalError) {
+        console.error('Token approval failed:', approvalError);
+        throw new Error(`Failed to approve ${swapState.fromToken}: ${approvalError.message}`);
       }
 
       // Calculate minimum amount out with slippage tolerance
       const minAmountOut = (parseFloat(swapState.toAmount) * (1 - swapState.slippage / 100)).toFixed(6);
 
       // Execute swap
+      console.log('Executing swap:', {
+        from: swapState.fromToken,
+        to: swapState.toToken,
+        amount: swapState.fromAmount,
+        minOut: minAmountOut,
+        fromAddress: fromTokenAddress,
+        toAddress: toTokenAddress,
+        dexAddress: dexAddress
+      });
+      
       const tx = await contractService.swapTokens(
         fromTokenAddress,
         toTokenAddress,
@@ -256,6 +287,8 @@ export const useSwap = (walletState: {
         minAmountOut,
         chainId
       );
+      
+      console.log('Swap transaction submitted:', tx.hash);
 
       // Reset form
       setSwapState(prev => ({

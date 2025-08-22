@@ -28,33 +28,49 @@ export const useTokenBalances = (walletState: {
       return;
     }
 
-    setIsLoading(true);
+    // Don't set loading if we already have balances (prevents flickering)
+    const shouldSetLoading = balances.length === 0;
+    if (shouldSetLoading) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
-      // Always get native KAIA balance first
-      const nativeKaiaBalance = await provider.getBalance(address);
-      const formattedNativeBalance = ethers.utils.formatEther(nativeKaiaBalance);
+      // Load all balances in parallel to avoid flickering
+      const [nativeKaiaBalance, kusdBalanceResult, wkaiaBalanceResult] = await Promise.allSettled([
+        provider.getBalance(address),
+        contractService.getKUSDBalance(address, chainId),
+        contractService.getWKAIABalance(address, chainId)
+      ]);
 
-      const tokenBalances: TokenBalance[] = [
-        {
+      const tokenBalances: TokenBalance[] = [];
+
+      // Native KAIA balance
+      if (nativeKaiaBalance.status === 'fulfilled') {
+        const formattedNativeBalance = ethers.utils.formatEther(nativeKaiaBalance.value);
+        tokenBalances.push({
           symbol: 'KAIA',
           balance: formattedNativeBalance,
           value: (parseFloat(formattedNativeBalance) * 0.85).toFixed(2),
-        },
-      ];
+        });
+      } else {
+        console.error('Failed to get KAIA balance:', nativeKaiaBalance.reason);
+        tokenBalances.push({
+          symbol: 'KAIA',
+          balance: '0',
+          value: '0.00',
+        });
+      }
 
-      // Try to get ERC20 token balances, but don't fail if they don't exist
-      try {
-        const kusdBalance = await contractService.getKUSDBalance(address, chainId);
+      // KUSD balance
+      if (kusdBalanceResult.status === 'fulfilled') {
         tokenBalances.push({
           symbol: 'KUSD',
-          balance: kusdBalance,
-          value: (parseFloat(kusdBalance) * 1.00).toFixed(2),
+          balance: kusdBalanceResult.value,
+          value: (parseFloat(kusdBalanceResult.value) * 1.00).toFixed(2),
         });
-      } catch (error) {
-        console.log('KUSD balance not available:', error.message);
-        // Add KUSD with 0 balance
+      } else {
+        console.log('KUSD balance not available:', kusdBalanceResult.reason);
         tokenBalances.push({
           symbol: 'KUSD',
           balance: '0',
@@ -62,16 +78,15 @@ export const useTokenBalances = (walletState: {
         });
       }
 
-      try {
-        const wkaiaBalance = await contractService.getWKAIABalance(address, chainId);
+      // WKAIA balance
+      if (wkaiaBalanceResult.status === 'fulfilled') {
         tokenBalances.push({
           symbol: 'WKAIA',
-          balance: wkaiaBalance,
-          value: (parseFloat(wkaiaBalance) * 0.85).toFixed(2),
+          balance: wkaiaBalanceResult.value,
+          value: (parseFloat(wkaiaBalanceResult.value) * 0.85).toFixed(2),
         });
-      } catch (error) {
-        console.log('WKAIA balance not available:', error.message);
-        // Add WKAIA with 0 balance
+      } else {
+        console.log('WKAIA balance not available:', wkaiaBalanceResult.reason);
         tokenBalances.push({
           symbol: 'WKAIA',
           balance: '0',
@@ -79,15 +94,21 @@ export const useTokenBalances = (walletState: {
         });
       }
 
-      setBalances(tokenBalances);
+      // Only update if balances actually changed to prevent unnecessary re-renders
+      setBalances(prevBalances => {
+        if (JSON.stringify(prevBalances) === JSON.stringify(tokenBalances)) {
+          return prevBalances;
+        }
+        return tokenBalances;
+      });
     } catch (error) {
       console.error('Error loading token balances:', error);
       setError('Failed to load token balances');
-      setBalances([]);
+      // Don't clear balances on error, keep previous values
     } finally {
       setIsLoading(false);
     }
-  }, [contractService, address, chainId, isConnected, provider]);
+  }, [contractService, address, chainId, isConnected, provider, balances.length]);
 
   const getBalance = useCallback((symbol: string): string => {
     const token = balances.find(b => b.symbol === symbol);

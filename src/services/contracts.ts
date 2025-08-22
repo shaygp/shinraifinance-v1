@@ -148,20 +148,30 @@ export class ContractService {
 
   async getKAIABalance(userAddress: string, chainId: number): Promise<string> {
     try {
-      // For Kairos testnet, get actual native KAIA balance from provider
-      if (chainId === 1001) {
+      // For Kairos testnet, check if we have ERC20 KAIA or native KAIA
+      const kaiaAddress = getTokenAddress('KAIA', chainId);
+      const code = await this.provider.getCode(kaiaAddress);
+      
+      if (code === '0x') {
+        // No contract deployed, use native balance
         const balance = await this.provider.getBalance(userAddress);
         return ethers.utils.formatEther(balance);
+      } else {
+        // ERC20 KAIA contract exists
+        const contract = this.getKAIAContract(chainId);
+        const balance = await contract.balanceOf(userAddress);
+        return ethers.utils.formatEther(balance);
       }
-      
-      const contract = this.getKAIAContract(chainId);
-      const balance = await contract.balanceOf(userAddress);
-      return ethers.utils.formatEther(balance);
     } catch (error) {
       console.error('Error getting KAIA balance:', error);
       // Fallback to native balance
-      const balance = await this.provider.getBalance(userAddress);
-      return ethers.utils.formatEther(balance);
+      try {
+        const balance = await this.provider.getBalance(userAddress);
+        return ethers.utils.formatEther(balance);
+      } catch (nativeError) {
+        console.error('Error getting native balance:', nativeError);
+        return '0';
+      }
     }
   }
 
@@ -226,10 +236,28 @@ export class ContractService {
 
   // Token Approval Functions
   async approveKAIA(spender: string, amount: string, chainId: number) {
-    const contract = this.getKAIAContract(chainId);
-    const amountWei = ethers.utils.parseEther(amount);
-    const tx = await contract.approve(spender, amountWei);
-    return await tx.wait();
+    try {
+      // For Kairos testnet, KAIA might be native token, so try ERC20 contract first
+      const contract = this.getKAIAContract(chainId);
+      const amountWei = ethers.utils.parseEther(amount);
+      
+      // Check if contract exists
+      const code = await this.provider.getCode(contract.address);
+      if (code === '0x') {
+        throw new Error('KAIA token contract not deployed - using native KAIA');
+      }
+      
+      const tx = await contract.approve(spender, amountWei);
+      return await tx.wait();
+    } catch (error) {
+      console.error('KAIA approval error:', error);
+      // If KAIA is native token, approval is not needed
+      if (error.message.includes('not deployed')) {
+        console.log('KAIA is native token, no approval needed');
+        return { status: 1, hash: 'native-approval-skipped' };
+      }
+      throw error;
+    }
   }
 
   async approveKUSD(spender: string, amount: string, chainId: number) {
@@ -285,17 +313,39 @@ export class ContractService {
       const amountInWei = ethers.utils.parseEther(amountIn);
       const amountOutMinWei = ethers.utils.parseEther(amountOutMin);
       
+      // Check if contract exists
+      const code = await this.provider.getCode(dex.address);
+      if (code === '0x') {
+        throw new Error('DEX contract not deployed');
+      }
+      
+      // Check if pool exists and has liquidity
+      try {
+        const poolInfo = await dex.getPoolInfo(tokenIn, tokenOut);
+        if (poolInfo.totalLiquidity.eq(0)) {
+          throw new Error('No liquidity available for this trading pair');
+        }
+      } catch (poolError) {
+        if (poolError.message.includes('Pool does not exist')) {
+          throw new Error('Trading pair not available. Pool needs to be created first.');
+        }
+        throw poolError;
+      }
+      
       const tx = await dex.swapExactTokensForTokens(
         amountInWei,
         amountOutMinWei,
         tokenIn,
-        tokenOut
+        tokenOut,
+        {
+          gasLimit: 300000
+        }
       );
       
       return await tx.wait();
     } catch (error) {
       console.error('swapTokens error:', error);
-      throw new Error(`Failed to execute swap: ${error.message}`);
+      throw error;
     }
   }
 
@@ -304,22 +354,40 @@ export class ContractService {
       const dex = this.getDEXContract(chainId);
       const amountInWei = ethers.utils.parseEther(amountIn);
       
+      // Check if contract exists
+      const code = await this.provider.getCode(dex.address);
+      if (code === '0x') {
+        throw new Error('DEX contract not deployed');
+      }
+      
       const amountOut = await dex.getAmountOut(amountInWei, tokenIn, tokenOut);
       return ethers.utils.formatEther(amountOut);
     } catch (error) {
       console.error('getSwapQuote error:', error);
-      throw new Error(`Failed to get swap quote: ${error.message}`);
+      throw error;
     }
   }
 
   async getPoolInfo(tokenA: string, tokenB: string, chainId: number) {
-    const dex = this.getDEXContract(chainId);
-    const [reserveA, reserveB, totalLiquidity] = await dex.getPoolInfo(tokenA, tokenB);
-    return {
-      reserveA: ethers.utils.formatEther(reserveA),
-      reserveB: ethers.utils.formatEther(reserveB),
-      totalLiquidity: ethers.utils.formatEther(totalLiquidity),
-    };
+    try {
+      const dex = this.getDEXContract(chainId);
+      
+      // Check if contract exists
+      const code = await this.provider.getCode(dex.address);
+      if (code === '0x') {
+        throw new Error('DEX contract not deployed');
+      }
+      
+      const [reserveA, reserveB, totalLiquidity] = await dex.getPoolInfo(tokenA, tokenB);
+      return {
+        reserveA: ethers.utils.formatEther(reserveA),
+        reserveB: ethers.utils.formatEther(reserveB),
+        totalLiquidity: ethers.utils.formatEther(totalLiquidity),
+      };
+    } catch (error) {
+      console.error('getPoolInfo error:', error);
+      throw error;
+    }
   }
 
   // Farm Functions

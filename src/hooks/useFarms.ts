@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useContractService } from '@/services/contracts';
+import { getTokenAddress, getProtocolAddress } from '@/config/kaia';
 
 export interface Farm {
   id: string;
@@ -235,10 +236,13 @@ export const useFarms = (walletState: {
       
       // If this is a specific token farm (not LP)
       try {
-        if (farmInfo.lpToken === await contractService.getKUSDContract(chainId).getAddress()) {
+        const kusdAddress = getTokenAddress('KUSD', chainId);
+        const wkaiaAddress = getTokenAddress('WKAIA', chainId);
+        
+        if (farmInfo.lpToken === kusdAddress) {
           userBalance = await contractService.getKUSDBalance(address, chainId);
           tokenSymbol = 'KUSD';
-        } else if (farmInfo.lpToken === await contractService.getWKAIAContract(chainId).getAddress()) {
+        } else if (farmInfo.lpToken === wkaiaAddress) {
           userBalance = await contractService.getWKAIABalance(address, chainId);
           tokenSymbol = 'WKAIA';
         }
@@ -252,13 +256,15 @@ export const useFarms = (walletState: {
       }
       
       // Approve LP token for farm contract
-      const farmContract = contractService.getFarmContract(chainId);
-      const farmAddress = await farmContract.getAddress();
+      const farmAddress = getProtocolAddress('farms', chainId);
       
       // Approve the correct token
-      if (farmInfo.lpToken === await contractService.getKAIAContract(chainId).getAddress()) {
+      const kaiaAddress = getTokenAddress('KAIA', chainId);
+      const kusdAddress = getTokenAddress('KUSD', chainId);
+      
+      if (farmInfo.lpToken === kaiaAddress) {
         await contractService.approveKAIA(farmAddress, amount, chainId);
-      } else if (farmInfo.lpToken === await contractService.getKUSDContract(chainId).getAddress()) {
+      } else if (farmInfo.lpToken === kusdAddress) {
         await contractService.approveKUSD(farmAddress, amount, chainId);
       } else {
         // For actual LP tokens, we need a generic approval method

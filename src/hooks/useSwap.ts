@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useContractService } from '@/services/contracts';
 import { useWallet } from './useWallet';
-import { getTokenMetadata, getTokenAddress } from '@/config/kaia';
+import { getTokenMetadata, getTokenAddress, getProtocolAddress } from '@/config/kaia';
 
 export interface SwapState {
   fromToken: string;
@@ -230,8 +230,7 @@ export const useSwap = (walletState: {
       }
 
       // Get DEX contract address for approval
-      const dexContract = contractService.getDEXContract(chainId);
-      const dexAddress = await dexContract.getAddress();
+      const dexAddress = getProtocolAddress('swap', chainId);
       
       // Approve tokens for DEX contract
       switch (swapState.fromToken) {

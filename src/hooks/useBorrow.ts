@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useContractService } from '@/services/contracts';
 import { useWallet } from './useWallet';
-import { getTokenAddress } from '@/config/kaia';
+import { getTokenAddress, getProtocolAddress } from '@/config/kaia';
 
 export interface BorrowState {
   collateralToken: string;
@@ -185,7 +185,7 @@ export const useBorrow = (walletState: {
 
       // Get lending contract address
       const lendingContract = contractService.getLendingContract(chainId);
-      const lendingContractAddress = await lendingContract.getAddress();
+      const lendingContractAddress = getProtocolAddress('lending', chainId);
       
       // Approve collateral for lending contract
       switch (borrowState.collateralToken) {

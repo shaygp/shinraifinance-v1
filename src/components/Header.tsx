@@ -22,7 +22,7 @@ const Header = () => {
     switchToKairosNetwork 
   } = walletState;
   
-  const { balances, isLoading: balancesLoading, getTotalValue } = useTokenBalances(walletState);
+  const { balances, isLoading: balancesLoading, getTotalValue, mintTestTokens } = useTokenBalances(walletState);
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -107,6 +107,8 @@ const Header = () => {
                         balances={balances} 
                         isLoading={balancesLoading}
                         className="border-0 p-0 bg-transparent"
+                        showGetTestTokens={chainId === 1001}
+                        onGetTestTokens={mintTestTokens}
                       />
                     </div>
                     

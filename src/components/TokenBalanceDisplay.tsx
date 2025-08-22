@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Coins } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Wallet, Coins, Plus } from "lucide-react";
 
 interface TokenBalance {
   symbol: string;
@@ -13,12 +14,16 @@ interface TokenBalanceDisplayProps {
   balances: TokenBalance[];
   isLoading?: boolean;
   className?: string;
+  onGetTestTokens?: () => void;
+  showGetTestTokens?: boolean;
 }
 
 export const TokenBalanceDisplay: React.FC<TokenBalanceDisplayProps> = ({
   balances,
   isLoading,
-  className = ""
+  className = "",
+  onGetTestTokens,
+  showGetTestTokens = false
 }) => {
   if (isLoading) {
     return (
@@ -74,9 +79,22 @@ export const TokenBalanceDisplay: React.FC<TokenBalanceDisplayProps> = ({
       )}
 
       <div className="mt-3 pt-3 border-t border-border">
-        <Badge variant="outline" className="text-xs">
-          Kairos Testnet
-        </Badge>
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className="text-xs">
+            Kairos Testnet
+          </Badge>
+          {showGetTestTokens && onGetTestTokens && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onGetTestTokens}
+              className="text-xs h-6"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Get Test Tokens
+            </Button>
+          )}
+        </div>
       </div>
     </Card>
   );

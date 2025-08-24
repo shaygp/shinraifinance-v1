@@ -174,13 +174,6 @@ src/
 - **Purpose**: ERC-20 wrapper for native KAIA
 - **Features**: Deposit/withdraw functionality
 
-## 🌟 Why Kaia Blockchain?
-
-### Technical Advantages
-- **EVM Compatible** - migration from Ethereum
-- **Layer 1 Solution** - No additional layer complexity
-- **Enterprise Ready** - Production infrastructure
-- **Active Development** - improvements and updates
 
 ## 🤝 Contributing
 
@@ -199,10 +192,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- **Website**: [shinraiprotocol.com](https://shinraiprotocol.com)
+- **Website**: (https://shinraiprotocol.vercel.app/))
 - **Documentation**: [docs.shinraiprotocol.com](https://docs.shinraiprotocol.com)
-- **Discord**: [Join our community](https://discord.gg/shinraiprotocol)
-- **Twitter**: [@ShinraiProtocol](https://twitter.com/ShinraiProtocol)
+- **DoraHacks Build**: (https://dorahacks.io/buidl/31428)
 - **Kaia Network**: [kaia.io](https://kaia.io)
 
 
